@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Real-Time FFT</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+    }
+    #freq {
+      font-size: 1.5em;
+      margin-bottom: 20px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h2>Real-Time FFT</h2>
+
+  <div id="freq">Peak Freq: -- Hz</div>
+
+  <div style="width: 1000px; height: 400px;">
+    <canvas id="ampChart"></canvas>
+  </div>
+
+  <script>
+    const POINT_COUNT = 20;
+    let currentIndex = 0;
+
+    const labels = [];
+    for (let i = 0; i < POINT_COUNT; i++) {
+      labels.push(i);
+    }
+    const ampData = Array(POINT_COUNT).fill(null);
+
+    const ampChart = new Chart(document.getElementById('ampChart'), {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'FFT Amplitude',
+          data: ampData,
+          borderColor: 'red',
+          backgroundColor: 'red',
+          fill: false,
+          tension: 0.2
+        }]
+      },
+      options: {
+        responsive: true,
+        animation: false,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Sample Index'
+            }
+          },
+          y: {
+            beginAtZero: true,
+            min: 0,
+            max: 20000,
+            title: {
+              display: true,
+              text: 'Amplitude'
+            }
+          }
+        }
+      }
+    });
+
+    const client = mqtt.connect('ws://localhost:8083/mqtt', {
+      connectTimeout: 4000
+    });
+
+    client.on('connect', () => {
+      console.log('Connected to MQTT broker');
+      client.subscribe('fft/data', err => {
+        if (!err) {
+          console.log('Subscribed to fft/data');
+        }
+      });
+    });
+
+    client.on('message', (topic, message) => {
+      const payload = message.toString().trim();
+      const parts = payload.split(',');
+
+      if (parts.length >= 2) {
+        const freq = parseInt(parts[0]);
+        const amp = parseInt(parts[1]);
+
+        if (!isNaN(freq) && !isNaN(amp)) {
+          ampData[currentIndex] = amp;
+          currentIndex = (currentIndex + 1) % POINT_COUNT;
+          ampChart.update();
+
+          document.getElementById('freq').textContent = `Peak Freq: ${freq} Hz`;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
