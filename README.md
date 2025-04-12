@@ -11,7 +11,7 @@ This project demonstrates a real-time FFT processing system based on STM32F103RC
 
 ## 🔧 Hardware Architecture | 硬體架構圖
 
-![Hardware Overview](media/20241210-192203.jpg)
+![Hardware Overview](media/20241210_192203.jpg)
 
 - STM32F103RCT6 main board  
 - ST7789 LCD ×2：Waveform & FFT display  
